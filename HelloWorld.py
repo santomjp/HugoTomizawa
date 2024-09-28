@@ -1,0 +1,8 @@
+print("Hello World!")
+print(10 + 10)
+print("  ☆   ☆  ☆ ☆  ☆ ")
+print("    /\ ☆ ☆  ( )    ")
+print("   /  \    (   )   ")
+print("  /____\  (_   _)  ")
+print(" /|  _ |\   | |    ") 
+print("  | |°||    | |    ")        
