@@ -10,6 +10,9 @@ tela = pygame.display.set_mode(tamanhoTela)
 pygame.display.set_caption("Homeless Walker")
 dt = 0
 
+# Carrega o arquivo de música de fundo
+#pygame.mixer.music.load("assets/Music/BoxGamesMusic.mp3")
+
 # Carrega a fonte a ser usada no jogo
 fonteTempo = pygame.font.Font("assets/Fonts/EnergyStation/Energy Station.ttf", 80)
 
@@ -18,12 +21,14 @@ folhaSpritesIdle = pygame.image.load("assets/Homeless_1/Idle_2.png").convert_alp
 folhaSpritesWalk = pygame.image.load("assets/Homeless_1/Walk.png").convert_alpha()
 folhaSpritesJump = pygame.image.load("assets/Homeless_1/Jump.png").convert_alpha()
 folhaSpritesRunn = pygame.image.load("assets/Homeless_1/Run.png").convert_alpha()
+folhasSpriteDead = pygame.image.load("assets/Homeless_1/Dead.png").convert_alpha()
 
 # Define os frames
 listFramesIdle = []
 listFramesWalk = []
 listFramesJump = []
 listFramesRunn = []
+listFramesDead = []
 
 # Cria os frames do personagem na lista de listFramesIdle
 for i in range(11):
@@ -51,6 +56,11 @@ for i in range(8):
     frame = pygame.transform.scale(frame, (256, 256))
     listFramesRunn.append(frame)
 
+for i in range(4):
+    frame = folhasSpriteDead.subsurface(i * 128, 0, 128, 128)
+    frame = pygame.transform.scale(frame, (256, 256))
+    listFramesDead.append(frame)
+
 # Variaveis da animação do personagem parado
 indexFrameIdle = 0 # Controla qual imagem está sendo mostrada na tela
 tempoAnimacaoIdle = 0.0 # Controla quanto tempo se passou desde a última troca de frame
@@ -70,6 +80,11 @@ velocidadeAnimacaoJump = 5
 indexFrameRunn = 0
 tempoAnimacaoRunn = 0.0
 velocidadeAnimacaoRunn = 10
+
+# Variaveis da animação do personagem morto
+indexFrameDead = 0
+tempoAnimacaoDead = 0.0
+velocidadeAnimacaoDead = 3
 
 # Retangulo do personagem na tela para melhor controle e posicionamento do personagem
 personagemRect = listFramesIdle[0].get_rect(midbottom=(250, 480))
@@ -134,6 +149,10 @@ pygame.time.set_timer(ADICIONA_OBSTACULO, randint(500, tempoMaximoEntreObstaculo
 
 # LOOP PRINCIPAL
 while True:
+    # Verifica se a música de fundo está tocando
+   # if not pygame.mixer.music.get_busy():
+   #     pygame.mixer.music.play()
+
     # Loop que verifica todos os eventos que acontecem no jogo
     for event in pygame.event.get():
 
@@ -219,14 +238,8 @@ while True:
 
 
     # DESENHA OS OBSTÁCULOS NA TELA
-    
     for obstaculo in listaObstaculos:
         obstaculo["rect"].x -= 30 * velocidadePersonagem * dt
-        if listTeclas[pygame.K_LEFT]:
-            obstaculo["rect"].x += (600 + velocidadePersonagem) * dt
-        
-        if listTeclas[pygame.K_RIGHT]:
-            obstaculo["rect"].x -= (600 + velocidadePersonagem) * dt
 
         # Verifica se o obstáculo saiu da tela
         if obstaculo["rect"].right < 0:
@@ -275,6 +288,16 @@ while True:
         indexFrameRunn = (indexFrameRunn + 1) % len(listFramesRunn)
         tempoAnimacaoRunn = 0.0
 
+    # Atualiza a animação do personagem morto
+    if GameOver and indexFrameDead != len(listFramesDead) - 1:
+        tempoAnimacaoDead += dt
+
+    # Verifica se o tempo de animação do personagem morto é maior ou igual ao tempo de animação
+    if tempoAnimacaoDead >= 1 / velocidadeAnimacaoDead:
+        # Atualiza o frame do personagem morto
+        indexFrameDead = (indexFrameDead + 1) % len(listFramesDead)
+        tempoAnimacaoDead = 0.0
+
     # Verifica se o personagem está andando
     estaAndando = False
 
@@ -295,6 +318,7 @@ while True:
                 gravidade = -30 # Define como negativo para o personagem subir
                 indexFrameJump = 0 # Reseta o frame do pulo
     else:
+        # Reinicia o jogo
         if listTeclas[pygame.K_RETURN]:
             vidas = 3
             GameOver = False
@@ -302,6 +326,11 @@ while True:
             velocidadePersonagem = 30
             tempoMaximoEntreObstaculos = 3000
             listaObstaculos = []
+            indexFrameDead = 0
+
+            # Reinicia  a Música de fundo
+           # pygame.mixer.music.stop()
+           # pygame.mixer.music.play()
 
     # Gravidade Aumenta
     gravidade += 2
@@ -316,23 +345,26 @@ while True:
     personagemColisaoRect.midbottom = personagemRect.midbottom
 
     # Desenha o personagem
-    if gravidade < 0: # Verifica se o personagem está subindo
-        frame = listFramesJump[indexFrameJump]
+    if not GameOver:
+        if gravidade < 0: # Verifica se o personagem está subindo
+            frame = listFramesJump[indexFrameJump]
+        else:
+            if estaAndando: # Verifica se o personagem está andando
+                if velocidadePersonagem < 40:
+                    frame = listFramesWalk[indexFrameWalk]
+                if velocidadePersonagem < 50:
+                    frame = listFramesRunn[indexFrameRunn]
+                elif velocidadePersonagem < 70:
+                    velocidadeAnimacaoRunn = 30
+                    frame = listFramesRunn[indexFrameRunn]
+                else:
+                    velocidadeAnimacaoRunn = 40
+                    frame = listFramesRunn[indexFrameRunn]
+                
+            else: # Caso contrário, o personagem está parado
+                frame = listFramesIdle[indexFrameIdle]
     else:
-        if estaAndando: # Verifica se o personagem está andando
-            if velocidadePersonagem < 40:
-                frame = listFramesWalk[indexFrameWalk]
-            if velocidadePersonagem < 50:
-                frame = listFramesRunn[indexFrameRunn]
-            elif velocidadePersonagem < 70:
-                velocidadeAnimacaoRunn = 30
-                frame = listFramesRunn[indexFrameRunn]
-            else:
-                velocidadeAnimacaoRunn = 40
-                frame = listFramesRunn[indexFrameRunn]
-            
-        else: # Caso contrário, o personagem está parado
-            frame = listFramesIdle[indexFrameIdle]
+        frame = listFramesDead[indexFrameDead]
 
     if direcaoPersonagem == -1: # Verifica se o personagem está olhando para a esquerda e inverte a imagem
         frame = pygame.transform.flip(frame, True, False) # Inverte a imagem
